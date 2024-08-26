@@ -46,6 +46,17 @@ return [
             ],
         ],
 
+        'pusher' => [
+            'driver' => 'pusher',
+            'key' => null,
+            'secret' => null,
+            'app_id' => null,
+            'options' => [
+                'cluster' => null,
+                'useTLS' => true,
+            ],
+        ],
+
         'ably' => [
             'driver' => 'ably',
             'key' => env('ABLY_KEY'),

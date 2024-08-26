@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,76 +11,51 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * Gli attributi che possono essere assegnati in modo massivo.
-     *
-     * @var array
-     */
     protected $fillable = [
         'name',
+        'surname',
         'email',
         'password',
+        'firebase_token',
+        'position',
+        'address',
         'type',
         'is_premium',
-        'firebase_token'
+        'email_verified_at',
     ];
 
-    /**
-     * Gli attributi che dovrebbero essere nascosti per gli array.
-     *
-     * @var array
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Gli attributi che dovrebbero essere convertiti in tipi nativi.
-     *
-     * @var array
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_premium' => 'boolean',
     ];
 
-    /**
-     * Relazione con il profilo del terapista.
-     */
     public function therapistProfile()
     {
         return $this->hasOne(TherapistProfile::class);
     }
 
-    /**
-     * Relazione con il profilo del genitore/paziente.
-     */
     public function parentPatientProfile()
     {
         return $this->hasOne(ParentPatientProfile::class);
     }
 
-    /**
-     * Relazione con il profilo del centro.
-     */
     public function centerProfile()
     {
         return $this->hasOne(CenterProfile::class);
     }
 
-    /**
-     * Relazione con le conversazioni a cui l'utente partecipa.
-     */
     public function conversations()
     {
-        return $this->belongsToMany(Conversation::class);
+        return $this->belongsToMany(Conversation::class)->withTimestamps();
     }
 
-    /**
-     * Relazione con i messaggi inviati dall'utente.
-     */
     public function messages()
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(Message::class, 'sender_id');
     }
 }

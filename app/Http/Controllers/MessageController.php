@@ -21,10 +21,22 @@ class MessageController extends Controller
 
     public function store(Request $request, $conversationId)
     {
+        // Validazione dell'input
+        $validatedData = $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        // Controlla se l'utente è un partecipante della conversazione
+        $conversation = Conversation::findOrFail($conversationId);
+        if (!$conversation->users->contains(auth()->id())) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Creazione del messaggio
         $message = Message::create([
             'conversation_id' => $conversationId,
             'sender_id' => auth()->id(),
-            'content' => $request->input('content'),
+            'message_content' => $validatedData['content'],
         ]);
 
         // Invia la notifica push ai partecipanti della conversazione
@@ -39,11 +51,11 @@ class MessageController extends Controller
     protected function sendPushNotification(Message $message)
     {
         $conversation = $message->conversation;
-        $participants = $conversation->participants()->where('id', '!=', $message->sender_id)->get();
+        $participants = $conversation->users()->where('id', '!=', $message->sender_id)->get();
 
         foreach ($participants as $participant) {
-            if ($participant->firebase_token) { // Assumendo che tu abbia un campo firebase_token nella tabella users
-                $notification = Notification::create('Nuovo Messaggio', $message->content);
+            if ($participant->firebase_token) { // Controlla se il token Firebase è disponibile
+                $notification = Notification::create('Nuovo Messaggio', $message->message_content);
                 $cloudMessage = CloudMessage::withTarget('token', $participant->firebase_token)
                     ->withNotification($notification)
                     ->withData(['conversationId' => $message->conversation_id]);

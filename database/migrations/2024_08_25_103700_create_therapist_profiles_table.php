@@ -11,9 +11,9 @@ class CreateTherapistProfilesTable extends Migration
         Schema::create('therapist_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->string('profession');
             $table->string('specialization');
             $table->text('bio')->nullable();
-            $table->string('clinic_address')->nullable();
             $table->timestamps();
         });
     }

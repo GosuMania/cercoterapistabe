@@ -12,7 +12,7 @@ class CreateCenterProfilesTable extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('center_name');
-            $table->string('address');
+            $table->string('service');
             $table->text('description')->nullable();
             $table->timestamps();
         });

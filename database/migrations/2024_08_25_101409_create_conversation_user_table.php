@@ -4,30 +4,33 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateConversationUserTable extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
+        Schema::create('conversation_user', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('firebase_uid')->unique()->nullable(); // Firebase UID per autenticazione
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password')->nullable(); // Può essere nullo se usi solo Firebase per l'autenticazione
-            $table->rememberToken();
+            $table->foreignId('conversation_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
+
+            // Ensure that each user can be associated with a conversation only once
+            $table->unique(['conversation_id', 'user_id']);
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('conversation_user');
     }
-};
+}

@@ -9,28 +9,30 @@ class UserResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @param \Illuminate\Http\Request $request
+     * @return array
      */
     public function toArray($request)
     {
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'surname'=> $this->surname,
             'email' => $this->email,
+            'firebaseToken' => $this->firebase_token,
+            'position' => $this->position,
+            'address' => $this->address,
             'type' => $this->type,
             'isPremium' => $this->is_premium,
-            'firebaseToken' => $this->firebase_token,
+            'emailVerifiedAt' => $this->email_verified_at,
             'profile' => $this->getProfile(),
-            'createdAt' => $this->created_at,
-            'updatedAt' => $this->updated_at,
         ];
     }
 
     /**
-     * Get the specific profile based on the user type.
+     * Get the profile based on user type.
      *
-     * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
+     * @return mixed
      */
     protected function getProfile()
     {

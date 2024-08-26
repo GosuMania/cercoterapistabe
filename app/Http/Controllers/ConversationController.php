@@ -8,43 +8,76 @@ use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
+    /**
+     * Recupera tutte le conversazioni di un utente specifico.
+     *
+     * @param int $userId
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+     */
+    public function getByAuthenticatedUser()
+    {
+        $userId = auth()->id();  // Ottiene l'ID dell'utente autenticato
+
+        $conversations = Conversation::whereHas('users', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })->with(['users', 'messages.sender'])->get();
+
+        return ConversationResource::collection($conversations);
+    }
+
     public function index()
     {
-        $conversations = Conversation::with(['participants', 'messages.sender'])->get();
+        $conversations = Conversation::with(['users', 'messages.sender'])->get();
         return ConversationResource::collection($conversations);
     }
 
     public function show($id)
     {
-        $conversation = Conversation::with(['participants', 'messages.sender'])->findOrFail($id);
+        $conversation = Conversation::with(['users', 'messages.sender'])->findOrFail($id);
         return new ConversationResource($conversation);
     }
 
     public function store(Request $request)
     {
-        $conversation = Conversation::create([
-            'name' => $request->input('name'),
-            'creator_id' => auth()->id(),
+        $validatedData = $request->validate([
+            'conversation_name' => 'required|string|max:255',
         ]);
 
-        $conversation->participants()->attach(auth()->id());
+        $conversation = Conversation::create([
+            'conversation_name' => $validatedData['conversation_name'],
+        ]);
 
-        return new ConversationResource($conversation->load(['participants', 'messages.sender']));
+        // Associa l'utente che ha creato la conversazione
+        $conversation->users()->attach(auth()->id());
+
+        return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
 
     public function update(Request $request, $id)
     {
         $conversation = Conversation::findOrFail($id);
-        $conversation->update($request->only('name'));
-        return new ConversationResource($conversation->load(['participants', 'messages.sender']));
+
+        // Assicurati che solo il creatore possa aggiornare la conversazione
+        $this->authorize('update', $conversation);
+
+        $validatedData = $request->validate([
+            'conversation_name' => 'required|string|max:255',
+        ]);
+
+        $conversation->update($validatedData);
+
+        return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
 
     public function destroy($id)
     {
         $conversation = Conversation::findOrFail($id);
+
+        // Assicurati che solo il creatore possa cancellare la conversazione
+        $this->authorize('delete', $conversation);
+
         $conversation->delete();
+
         return response()->noContent();
     }
 }
-
-

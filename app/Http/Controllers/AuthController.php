@@ -21,6 +21,8 @@ class AuthController extends Controller
     {
         $validatedData = $request->validate([
             'idToken' => 'required|string',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
             'type' => 'required|string|in:therapist,parent_patient,center',
             'is_premium' => 'boolean',
         ]);
@@ -33,13 +35,16 @@ class AuthController extends Controller
         $user = User::updateOrCreate(
             ['firebase_uid' => $firebaseUserId],
             [
-                'name' => $request->input('name'),
-                'email' => $request->input('email'),
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
                 'password' => Hash::make(uniqid()), // Una password casuale generata
                 'type' => $validatedData['type'],
                 'is_premium' => $request->input('is_premium', false),
             ]
         );
+
+        // Gestione del profilo in base al tipo di utente
+        $this->handleUserProfileCreation($user, $validatedData);
 
         // Genera un token di accesso per l'utente
         $token = $user->createToken('authToken')->plainTextToken;
@@ -50,6 +55,32 @@ class AuthController extends Controller
         ]);
     }
 
+    protected function handleUserProfileCreation(User $user, array $data)
+    {
+        switch ($user->type) {
+            case 'therapist':
+                $user->therapistProfile()->create([
+                    'profession' => $data['profession'] ?? '',
+                    'specialization' => $data['specialization'] ?? '',
+                    'bio' => $data['bio'] ?? '',
+                ]);
+                break;
+            case 'parent_patient':
+                $user->parentPatientProfile()->create([
+                    'relationship' => $data['relationship'] ?? '',
+                    'patient_name' => $data['patient_name'] ?? '',
+                    'patient_birthdate' => $data['patient_birthdate'] ?? null,
+                ]);
+                break;
+            case 'center':
+                $user->centerProfile()->create([
+                    'center_name' => $data['center_name'] ?? '',
+                    'service' => $data['service'] ?? '',
+                    'description' => $data['description'] ?? '',
+                ]);
+                break;
+        }
+    }
     public function login(Request $request)
     {
         $validatedData = $request->validate([

@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Message extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'conversation_id', 'sender_id', 'content'
+        'conversation_id',
+        'sender_id',
+        'message_content',
     ];
 
     public function conversation()
@@ -20,5 +25,3 @@ class Message extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 }
-
-

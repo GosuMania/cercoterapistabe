@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -23,17 +24,41 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        $user->update($request->only(['name', 'email', 'type', 'is_premium']));
 
+        // Autorizzazione (facoltativo, se necessario)
+        // $this->authorize('update', $user);
+
+        // Validazione dell'input
+        $validatedData = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'type' => 'required|in:therapist,parent_patient,center',
+            'is_premium' => 'boolean',
+            'position' => 'nullable|string|max:255',
+        ])->validate();
+
+        // Aggiornamento dei dati dell'utente
+        $user->update($validatedData);
+
+        // Aggiornamento del profilo specifico in base al tipo di utente
         switch ($user->type) {
             case 'therapist':
-                $user->therapistProfile()->updateOrCreate([], $request->only(['specialization', 'bio', 'clinic_address']));
+                $user->therapistProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['specialization', 'bio', 'profession'])
+                );
                 break;
             case 'parent_patient':
-                $user->parentPatientProfile()->updateOrCreate([], $request->only(['relationship', 'patient_name', 'patient_birthdate']));
+                $user->parentPatientProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['relationship', 'patient_name', 'patient_birthdate'])
+                );
                 break;
             case 'center':
-                $user->centerProfile()->updateOrCreate([], $request->only(['center_name', 'address', 'description']));
+                $user->centerProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['center_name', 'service', 'description'])
+                );
                 break;
         }
 
@@ -43,6 +68,10 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        // Autorizzazione (facoltativo, se necessario)
+        // $this->authorize('delete', $user);
+
         $user->delete();
         return response()->noContent();
     }

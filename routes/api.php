@@ -8,6 +8,7 @@ use App\Http\Controllers\MessageController;
 Route::controller(AuthController::class)->group(function () {
     Route::post('register', 'register');
     Route::post('login', 'login');
+    Route::post('social-login', 'socialLogin');
     Route::post('logout', 'logout')->middleware('auth:sanctum');
 });
 

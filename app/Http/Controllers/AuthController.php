@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Kreait\Firebase\Auth as FirebaseAuth;
 use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
@@ -17,36 +18,57 @@ class AuthController extends Controller
         $this->firebaseAuth = $firebaseAuth;
     }
 
-    public function register(Request $request)
+    public function loginOrRegister(Request $request)
     {
         $validatedData = $request->validate([
-            'idToken' => 'required|string',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
+            'idToken' => 'nullable|string',
+            'email' => 'nullable|email',
+            'password' => 'nullable|string',
             'type' => 'required|string|in:therapist,parent_patient,center',
-            'is_premium' => 'boolean',
         ]);
 
-        // Verifica il token di Firebase
-        $verifiedIdToken = $this->firebaseAuth->verifyIdToken($validatedData['idToken']);
-        $firebaseUserId = $verifiedIdToken->claims()->get('sub');
+        if ($request->has('idToken')) {
+            $verifiedIdToken = $this->firebaseAuth->verifyIdToken($validatedData['idToken']);
+            $firebaseUserId = $verifiedIdToken->claims()->get('sub');
+            $email = $verifiedIdToken->claims()->get('email');
 
-        // Crea o trova l'utente nel database locale
-        $user = User::updateOrCreate(
-            ['firebase_uid' => $firebaseUserId],
-            [
-                'name' => $validatedData['name'],
-                'email' => $validatedData['email'],
-                'password' => Hash::make(uniqid()), // Una password casuale generata
-                'type' => $validatedData['type'],
-                'is_premium' => $request->input('is_premium', false),
-            ]
-        );
+            $user = User::where('firebase_uid', $firebaseUserId)
+                ->orWhere('email', $email)
+                ->first();
 
-        // Gestione del profilo in base al tipo di utente
-        $this->handleUserProfileCreation($user, $validatedData);
+            if (!$user) {
+                $user = User::create([
+                    'firebase_uid' => $firebaseUserId,
+                    'email' => $email,
+                    'name' => $verifiedIdToken->claims()->get('name') ?? 'Utente',
+                    'password' => Hash::make(uniqid()), // Password casuale
+                    'type' => $validatedData['type'],
+                    'is_premium' => $request->input('is_premium', false),
+                ]);
 
-        // Genera un token di accesso per l'utente
+                $this->handleUserProfileCreation($user, $validatedData);
+            }
+
+        } elseif ($request->has(['email', 'password'])) {
+            $credentials = $request->only('email', 'password');
+
+            if (Auth::attempt($credentials)) {
+                $user = Auth::user();
+            } else {
+                return response()->json(['error' => 'Credenziali non valide'], 401);
+            }
+
+        } else {
+            return response()->json(['error' => 'Nessun metodo di autenticazione fornito'], 400);
+        }
+
+        if (empty($user->name)) {
+            return response()->json([
+                'needs_info' => true,
+                'message' => 'Nome e cognome richiesti',
+            ], 200);
+        }
+
         $token = $user->createToken('authToken')->plainTextToken;
 
         return response()->json([
@@ -81,38 +103,51 @@ class AuthController extends Controller
                 break;
         }
     }
-    public function login(Request $request)
-    {
-        $validatedData = $request->validate([
-            'idToken' => 'required|string',
-        ]);
 
-        // Verifica il token di Firebase
-        $verifiedIdToken = $this->firebaseAuth->verifyIdToken($validatedData['idToken']);
-        $firebaseUserId = $verifiedIdToken->claims()->get('sub');
-
-        // Cerca l'utente nel database locale
-        $user = User::where('firebase_uid', $firebaseUserId)->first();
-
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-        // Genera un nuovo token di accesso
-        $token = $user->createToken('authToken')->plainTextToken;
-
-        return response()->json([
-            'token' => $token,
-            'user' => new UserResource($user),
-        ]);
-    }
-
+    // Metodo per il logout
     public function logout(Request $request)
     {
-        // Revoca il token di accesso
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully']);
     }
-}
 
+    // Metodo per aggiornare i dati dell'utente
+    public function update(Request $request)
+    {
+        $user = auth()->user();
+
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'type' => 'required|string|in:therapist,parent_patient,center',
+            'is_premium' => 'boolean',
+            'position' => 'nullable|string|max:255',
+        ]);
+
+        $user->update($validatedData);
+
+        switch ($user->type) {
+            case 'therapist':
+                $user->therapistProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['profession', 'specialization', 'bio'])
+                );
+                break;
+            case 'parent_patient':
+                $user->parentPatientProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['relationship', 'patient_name', 'patient_birthdate'])
+                );
+                break;
+            case 'center':
+                $user->centerProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    $request->only(['center_name', 'service', 'description'])
+                );
+                break;
+        }
+
+        return new UserResource($user->load(['therapistProfile', 'parentPatientProfile', 'centerProfile']));
+    }
+}

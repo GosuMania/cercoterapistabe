@@ -2,11 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('register', 'register');
+    Route::post('login', 'login');
+    Route::post('login-or-register', 'loginOrRegister');
+    Route::post('logout', 'logout')->middleware('auth:sanctum');
+});
+
+Route::controller(UserController::class)->prefix('user')->group(function () {
+    Route::post('get-all-users', 'index')->middleware('auth:sanctum');
     Route::post('login', 'login');
     Route::post('login-or-register', 'loginOrRegister');
     Route::post('logout', 'logout')->middleware('auth:sanctum');

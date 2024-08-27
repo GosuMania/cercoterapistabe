@@ -52,7 +52,7 @@ class MessageController extends Controller
     protected function sendPushNotification(Message $message)
     {
         $conversation = $message->conversation;
-        $participants = $conversation->users()->where('id', '!=', $message->sender_id)->get();
+        $participants = $conversation->users()->where('users.id', '!=', $message->sender_id)->get();
 
         foreach ($participants as $participant) {
             if (!empty($participant->firebase_token)) { // Controlla se il token Firebase è disponibile e non nullo
@@ -64,7 +64,6 @@ class MessageController extends Controller
                 try {
                     $this->messaging->send($cloudMessage);
                 } catch (\Exception $e) {
-                    // Gestisci l'errore (ad esempio loggalo o invia una notifica di fallback)
                     \Log::error('Errore nell\'invio della notifica Firebase: ' . $e->getMessage());
                 }
             }

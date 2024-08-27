@@ -17,7 +17,7 @@ class CreateUsersTable extends Migration
             $table->string('firebase_token')->nullable();
             $table->string('position')->nullable();
             $table->string('address')->nullable();
-            $table->enum('type', ['therapist', 'parent_patient', 'center']);
+            $table->enum('type', ['therapist', 'parent_patient', 'center'])->nullable();
             $table->boolean('is_premium')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();

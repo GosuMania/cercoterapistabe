@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\MessageSent;
 use App\Http\Resources\MessageResource;
 use App\Models\Message;
+use App\Models\Conversation;
 use Illuminate\Http\Request;
 use Kreait\Firebase\Contract\Messaging as FirebaseMessaging;
 use Kreait\Firebase\Messaging\CloudMessage;

@@ -40,18 +40,32 @@ class ConversationController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'conversation_name' => 'required|string|max:255',
+            'user_id' => 'required|exists:users,id', // ID dell'utente con cui si vuole avviare la conversazione
         ]);
 
-        $conversation = Conversation::create([
-            'conversation_name' => $validatedData['conversation_name'],
-        ]);
+        $authUserId = auth()->id();
+        $otherUserId = $validatedData['user_id'];
 
-        // Associa l'utente che ha creato la conversazione
-        $conversation->users()->attach(auth()->id());
+        // Cerca una conversazione esistente tra i due utenti
+        $conversation = Conversation::whereHas('users', function ($query) use ($authUserId) {
+            $query->where('user_id', $authUserId);
+        })->whereHas('users', function ($query) use ($otherUserId) {
+            $query->where('user_id', $otherUserId);
+        })->first();
+
+        // Se non esiste, crea una nuova conversazione
+        if (!$conversation) {
+            $conversation = Conversation::create([
+                'conversation_name' => 'Chat between ' . $authUserId . ' and ' . $otherUserId,
+            ]);
+
+            // Associa entrambi gli utenti alla conversazione
+            $conversation->users()->attach([$authUserId, $otherUserId]);
+        }
 
         return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
+
 
     public function update(Request $request, $id)
     {

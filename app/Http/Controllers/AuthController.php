@@ -33,13 +33,13 @@ class AuthController extends Controller
             $firebaseUserId = $verifiedIdToken->claims()->get('sub');
             $email = $verifiedIdToken->claims()->get('email');
 
-            $user = User::where('firebase_uid', $firebaseUserId)
+            $user = User::where('firebase_token', $firebaseUserId)
                 ->orWhere('email', $email)
                 ->first();
 
             if (!$user) {
                 $user = User::create([
-                    'firebase_uid' => $firebaseUserId,
+                    'firebase_token' => $firebaseUserId,
                     'email' => $email,
                     'name' => $verifiedIdToken->claims()->get('name') ?? 'Utente',
                     'password' => Hash::make(uniqid()), // Password casuale

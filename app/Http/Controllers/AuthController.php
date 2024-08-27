@@ -25,7 +25,7 @@ class AuthController extends Controller
             'idToken' => 'nullable|string',
             'email' => 'nullable|email',
             'password' => 'nullable|string',
-            // 'type' => 'required|string|in:therapist,parent_patient,center',
+            'type' => 'nullable|string|in:therapist,parent_patient,center',
         ]);
 
         if ($request->has('idToken')) {

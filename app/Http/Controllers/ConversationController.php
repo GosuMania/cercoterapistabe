@@ -55,8 +55,10 @@ class ConversationController extends Controller
 
         // Se non esiste, crea una nuova conversazione
         if (!$conversation) {
+            $conversationName = 'Conversation between ' . $authUserId . ' and ' . $otherUserId;
+
             $conversation = Conversation::create([
-                'conversation_name' => 'Chat between ' . $authUserId . ' and ' . $otherUserId,
+                'conversation_name' => $conversationName,
             ]);
 
             // Associa entrambi gli utenti alla conversazione
@@ -65,6 +67,7 @@ class ConversationController extends Controller
 
         return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
+
 
 
     public function update(Request $request, $id)

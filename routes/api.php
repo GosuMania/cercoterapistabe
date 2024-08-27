@@ -5,7 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
 
-Route::controller(AuthController::class)->group(function () {
+Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('register', 'register');
     Route::post('login', 'login');
     Route::post('login-or-register', 'loginOrRegister');

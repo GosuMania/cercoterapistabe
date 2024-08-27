@@ -21,6 +21,13 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
+    public function getInfoUser()
+    {
+        $userId = auth()->id();
+        $user = User::with(['therapistProfile', 'parentPatientProfile', 'centerProfile'])->findOrFail($userId);
+        return new UserResource($user);
+    }
+
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);

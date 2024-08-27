@@ -3,21 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\ConversationResource;
+use App\Http\Resources\MessageResource; // Import necessario
 use App\Models\Conversation;
 use App\Models\Message;
 use Illuminate\Http\Request;
 
 class ConversationController extends Controller
 {
-    /**
-     * Recupera tutte le conversazioni di un utente specifico.
-     *
-     * @param int $userId
-     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
-     */
     public function getByAuthenticatedUser()
     {
-        $userId = auth()->id();  // Ottiene l'ID dell'utente autenticato
+        $userId = auth()->id();
 
         $conversations = Conversation::whereHas('users', function ($query) use ($userId) {
             $query->where('user_id', $userId);
@@ -34,7 +29,6 @@ class ConversationController extends Controller
 
     public function show($conversationId)
     {
-        // Verifica che l'utente autenticato faccia parte della conversazione
         $userId = auth()->id();
         $conversation = Conversation::where('id', $conversationId)
             ->whereHas('users', function ($query) use ($userId) {
@@ -43,9 +37,13 @@ class ConversationController extends Controller
             ->firstOrFail();
 
         // Recupera i messaggi della conversazione
+        $perPage = request()->validate([
+            'perPage' => 'integer|min:1|max:100',
+        ])['perPage'] ?? 20;
+
         $messages = Message::where('conversation_id', $conversationId)
             ->with('sender')
-            ->paginate(request('perPage', 20));
+            ->paginate($perPage);
 
         return MessageResource::collection($messages);
     }
@@ -53,20 +51,18 @@ class ConversationController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'user_id' => 'required|exists:users,id', // ID dell'utente con cui si vuole avviare la conversazione
+            'user_id' => 'required|exists:users,id',
         ]);
 
         $authUserId = auth()->id();
         $otherUserId = $validatedData['user_id'];
 
-        // Cerca una conversazione esistente tra i due utenti
         $conversation = Conversation::whereHas('users', function ($query) use ($authUserId) {
             $query->where('user_id', $authUserId);
         })->whereHas('users', function ($query) use ($otherUserId) {
             $query->where('user_id', $otherUserId);
         })->first();
 
-        // Se non esiste, crea una nuova conversazione
         if (!$conversation) {
             $conversationName = 'Conversation between ' . $authUserId . ' and ' . $otherUserId;
 
@@ -74,20 +70,16 @@ class ConversationController extends Controller
                 'conversation_name' => $conversationName,
             ]);
 
-            // Associa entrambi gli utenti alla conversazione
             $conversation->users()->attach([$authUserId, $otherUserId]);
         }
 
         return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
 
-
-
-    public function update(Request $request, $id)
+    public function update(Request $request, $conversationId)
     {
-        $conversation = Conversation::findOrFail($id);
+        $conversation = Conversation::findOrFail($conversationId);
 
-        // Assicurati che solo il creatore possa aggiornare la conversazione
         $this->authorize('update', $conversation);
 
         $validatedData = $request->validate([
@@ -99,11 +91,10 @@ class ConversationController extends Controller
         return new ConversationResource($conversation->load(['users', 'messages.sender']));
     }
 
-    public function destroy($id)
+    public function destroy($conversationId)
     {
-        $conversation = Conversation::findOrFail($id);
+        $conversation = Conversation::findOrFail($conversationId);
 
-        // Assicurati che solo il creatore possa cancellare la conversazione
         $this->authorize('delete', $conversation);
 
         $conversation->delete();

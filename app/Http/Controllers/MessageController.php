@@ -55,13 +55,18 @@ class MessageController extends Controller
         $participants = $conversation->users()->where('id', '!=', $message->sender_id)->get();
 
         foreach ($participants as $participant) {
-            if ($participant->firebase_token) { // Controlla se il token Firebase è disponibile
+            if (!empty($participant->firebase_token)) { // Controlla se il token Firebase è disponibile e non nullo
                 $notification = Notification::create('Nuovo Messaggio', $message->message_content);
                 $cloudMessage = CloudMessage::withTarget('token', $participant->firebase_token)
                     ->withNotification($notification)
                     ->withData(['conversationId' => $message->conversation_id]);
 
-                $this->messaging->send($cloudMessage);
+                try {
+                    $this->messaging->send($cloudMessage);
+                } catch (\Exception $e) {
+                    // Gestisci l'errore (ad esempio loggalo o invia una notifica di fallback)
+                    \Log::error('Errore nell\'invio della notifica Firebase: ' . $e->getMessage());
+                }
             }
         }
     }

@@ -31,10 +31,22 @@ class ConversationController extends Controller
         return ConversationResource::collection($conversations);
     }
 
-    public function show($id)
+    public function show($conversationId)
     {
-        $conversation = Conversation::with(['users', 'messages.sender'])->findOrFail($id);
-        return new ConversationResource($conversation);
+        // Verifica che l'utente autenticato faccia parte della conversazione
+        $userId = auth()->id();
+        $conversation = Conversation::where('id', $conversationId)
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->firstOrFail();
+
+        // Recupera i messaggi della conversazione
+        $messages = Message::where('conversation_id', $conversationId)
+            ->with('sender')
+            ->paginate(request('perPage', 20));
+
+        return MessageResource::collection($messages);
     }
 
     public function store(Request $request)

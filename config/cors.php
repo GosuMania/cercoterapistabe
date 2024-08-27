@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:3000', 'https://api.cercoterapista.it'],
+    'allowed_origins' => ['http://localhost:8100', 'https://api.cercoterapista.it'],
 
     'allowed_origins_patterns' => [],
 

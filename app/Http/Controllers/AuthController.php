@@ -25,7 +25,6 @@ class AuthController extends Controller
             'idToken' => 'nullable|string',
             'email' => 'nullable|email',
             'password' => 'nullable|string',
-            'type' => 'nullable|string|in:therapist,parent_patient,center',
         ]);
 
         if ($request->has('idToken')) {
@@ -43,7 +42,7 @@ class AuthController extends Controller
                     'email' => $email,
                     'name' => $verifiedIdToken->claims()->get('name') ?? 'Utente',
                     'password' => Hash::make(uniqid()), // Password casuale
-                    'type' => $validatedData['type'],
+                    'type' =>$request->type,
                     'is_premium' => $request->input('is_premium', false),
                 ]);
 

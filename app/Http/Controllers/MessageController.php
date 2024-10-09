@@ -44,7 +44,7 @@ class MessageController extends Controller
         $this->sendPushNotification($message);
 
         // Emetti l'evento per il real-time messaging
-        broadcast(new MessageSent($message))->toOthers();
+        // broadcast(new MessageSent($message))->toOthers();
 
         return new MessageResource($message->load('sender'));
     }

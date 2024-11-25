@@ -16,7 +16,8 @@ Route::controller(AuthController::class)->prefix('auth')->group(function () {
 Route::controller(UserController::class)->prefix('user')->group(function () {
     Route::get('get-all-users', 'index')->middleware('auth:sanctum');
     Route::get('get-info-user', 'getInfoUser')->middleware('auth:sanctum');
-
+    Route::get('get-saved-users', 'getSavedUsers')->middleware('auth:sanctum');
+    Route::post('toggle-saved-user', 'toggleSavedUser')->middleware('auth:sanctum');
 });
 
 // Rotte protette per conversazioni e messaggi

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\SavedUserResource;
 use App\Http\Resources\UserResource;
+use App\Models\SavedUser;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +14,65 @@ class UserController extends Controller
     public function index()
     {
         $users = User::with(['therapistProfile', 'parentPatientProfile', 'centerProfile'])->get();
-        return UserResource::collection($users);
+        return UserResource::collection($users)->select('id', 'name', 'surname', 'image_url', 'position', 'address', 'type', 'profile');
+    }
+
+    public function getSavedUsers()
+    {
+        $userId = auth()->id();
+
+        // Recupera i SavedUser con la relazione 'savedUser' per l'utente autenticato
+        $savedUsers = SavedUser::where('user_id', $userId)
+            ->with('savedUser') // Carica la relazione savedUser
+            ->get();
+
+        // Restituisce la collezione come resource
+        return SavedUserResource::collection($savedUsers);
+    }
+
+    public function toggleSavedUser(Request $request)
+    {
+        // Validazione dei dati in input
+        $validated = $request->validate([
+            'saved_user_id' => 'required|exists:users,id', // Verifica che l'ID esista nella tabella `users`
+            'save' => 'required|boolean', // Booleano per decidere se salvare o rimuovere
+        ]);
+
+        $userId = auth()->id(); // ID dell'utente autenticato
+
+        // Controlla se esiste già un record con questi valori
+        $existingRecord = SavedUser::where('user_id', $userId)
+            ->where('saved_user_id', $validated['saved_user_id'])
+            ->first();
+
+        if ($validated['save']) {
+            // Logica per salvare
+            if ($existingRecord) {
+                return response()->json([
+                    'message' => 'Utente già salvato.'
+                ], 409); // Conflict
+            }
+
+            $savedUser = SavedUser::create([
+                'user_id' => $userId,
+                'saved_user_id' => $validated['saved_user_id'],
+            ]);
+
+            return new SavedUserResource($savedUser);
+        } else {
+            // Logica per rimuovere
+            if (!$existingRecord) {
+                return response()->json([
+                    'message' => 'Utente non trovato tra quelli salvati.'
+                ], 404); // Not Found
+            }
+
+            $existingRecord->delete();
+
+            return response()->json([
+                'message' => 'Utente rimosso dai salvati con successo.'
+            ], 200); // Success
+        }
     }
 
     public function show($id)

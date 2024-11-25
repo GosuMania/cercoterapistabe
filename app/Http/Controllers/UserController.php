@@ -13,8 +13,11 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with(['therapistProfile', 'parentPatientProfile', 'centerProfile'])->get();
-        return UserResource::collection($users)->select('id', 'name', 'surname', 'image_url', 'position', 'address', 'type', 'profile');
+        $users = User::select('id', 'name', 'surname', 'image_url', 'position', 'address', 'type') // Seleziona i campi specifici
+        ->with(['therapistProfile', 'parentPatientProfile', 'centerProfile']) // Carica le relazioni necessarie
+        ->get();
+
+        return UserResource::collection($users);
     }
 
     public function getSavedUsers()

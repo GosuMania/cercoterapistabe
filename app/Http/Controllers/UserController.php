@@ -34,18 +34,18 @@ class UserController extends Controller
     {
         // Validazione dei dati in input
         $validated = $request->validate([
-            'saved_user_id' => 'required|exists:users,id', // Verifica che l'ID esista nella tabella `users`
-            'save' => 'required|boolean', // Booleano per decidere se salvare o rimuovere
+            'savedUserId' => 'required|exists:users,id', // Verifica che l'ID esista nella tabella `users`
+            'toggle' => 'required|boolean', // Booleano per decidere se salvare o rimuovere
         ]);
 
         $userId = auth()->id(); // ID dell'utente autenticato
 
         // Controlla se esiste già un record con questi valori
         $existingRecord = SavedUser::where('user_id', $userId)
-            ->where('saved_user_id', $validated['saved_user_id'])
+            ->where('saved_user_id', $validated['savedUserId'])
             ->first();
 
-        if ($validated['save']) {
+        if ($validated['toggle']) {
             // Logica per salvare
             if ($existingRecord) {
                 return response()->json([
@@ -55,7 +55,7 @@ class UserController extends Controller
 
             $savedUser = SavedUser::create([
                 'user_id' => $userId,
-                'saved_user_id' => $validated['saved_user_id'],
+                'saved_user_id' => $validated['savedUserId'],
             ]);
 
             return new SavedUserResource($savedUser);

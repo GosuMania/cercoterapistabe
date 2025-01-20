@@ -10,11 +10,11 @@ class CreateUsersTable extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('surname');
+            $table->string('name')->nullable();
+            $table->string('surname')->nullable();
             $table->string('email')->unique();
             $table->string('phone')->nullable();
-            $table->string('image_url');
+            $table->string('image_url')->nullable();
             $table->string('password');
             $table->string('firebase_token')->nullable();
             $table->string('position')->nullable();

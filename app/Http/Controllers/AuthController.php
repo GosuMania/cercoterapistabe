@@ -40,7 +40,8 @@ class AuthController extends Controller
                 $user = User::create([
                     'firebase_token' => $firebaseUserId,
                     'email' => $email,
-                    'name' => $verifiedIdToken->claims()->get('name') ?? 'Utente',
+                    'name' => $verifiedIdToken->claims()->get('given_name') ?? 'Nome',
+                    'surname' => $verifiedIdToken->claims()->get('family_name') ?? 'Cognome',
                     'password' => Hash::make(uniqid()), // Password casuale
                     'type' =>$request->type,
                     'is_premium' => $request->input('is_premium', false),

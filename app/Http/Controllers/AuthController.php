@@ -37,11 +37,12 @@ class AuthController extends Controller
                 ->first();
 
             if (!$user) {
+                $displayName = $claims['name'] ?? null; // Il nome completo è in `name`
                 $user = User::create([
                     'firebase_token' => $firebaseUserId,
                     'email' => $email,
-                    'name' => $verifiedIdToken->claims()->get('firstName') ?? 'Nome',
-                    'surname' => $verifiedIdToken->claims()->get('lastName') ?? 'Cognome',
+                    'name' => $displayName ? explode(' ', $displayName)[0] : 'Nome',
+                    'surname' => $displayName ? explode(' ', $displayName)[1] ?? 'Cognome' : 'Cognome',
                     'password' => Hash::make(uniqid()), // Password casuale
                     'type' =>$request->type,
                     'is_premium' => $request->input('is_premium', false),

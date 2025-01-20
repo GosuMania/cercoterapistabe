@@ -2,25 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class CenterProfile extends Model
 {
-    use HasFactory;
+    protected $fillable = ['user_id', 'center_name', 'therapies', 'service', 'description'];
 
-    protected $fillable = [
-        'user_id',
-        'center_name',
-        'service',
-        'description',
+    protected $casts = [
+        'therapies' => 'array',
+        'service' => 'array',
     ];
 
-    /**
-     * Get the user that owns the center profile.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function therapists()
+    {
+        return $this->belongsToMany(TherapistProfile::class, 'therapist_center_relationships', 'center_id', 'therapist_id')
+            ->withPivot('status')
+            ->withTimestamps();
     }
 }

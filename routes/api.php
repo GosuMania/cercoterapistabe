@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\TherapistCenterRelationshipController;
 
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('register', 'register');
@@ -18,6 +19,7 @@ Route::controller(UserController::class)->prefix('user')->group(function () {
     Route::get('get-info-user', 'getInfoUser')->middleware('auth:sanctum');
     Route::get('get-saved-users', 'getSavedUsers')->middleware('auth:sanctum');
     Route::post('toggle-saved-user', 'toggleSavedUser')->middleware('auth:sanctum');
+    Route::post('search', 'search')->middleware('auth:sanctum');
 });
 
 // Rotte protette per conversazioni e messaggi
@@ -43,3 +45,13 @@ Route::controller(MessageController::class)
         Route::put('{id}', 'update');
         Route::delete('{id}', 'destroy');
     });
+
+    // Rotte protette per conversazioni e messaggi
+    Route::controller(ConversationController::class)
+        ->prefix('relationships')
+        ->middleware('auth:sanctum')
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::put('{id}', 'update');
+        });

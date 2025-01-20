@@ -17,7 +17,7 @@ class UserResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'surname'=> $this->surname,
+            'surname' => $this->surname,
             'email' => $this->email,
             'imageUrl' => $this->image_url,
             'firebaseToken' => $this->firebase_token,
@@ -27,6 +27,7 @@ class UserResource extends JsonResource
             'isPremium' => $this->is_premium,
             'emailVerifiedAt' => $this->email_verified_at,
             'profile' => $this->getProfile(),
+            'availabilities' => AvailabilityResource::collection($this->whenLoaded('availabilities')), // Aggiungi le disponibilità
         ];
     }
 

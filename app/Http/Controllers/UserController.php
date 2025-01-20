@@ -11,14 +11,19 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    public function index()
-    {
-        $users = User::select('id', 'name', 'surname', 'image_url', 'position', 'address', 'type') // Seleziona i campi specifici
-        ->with(['therapistProfile', 'parentPatientProfile', 'centerProfile']) // Carica le relazioni necessarie
+public function index()
+{
+    $users = User::select('id', 'name', 'surname', 'image_url', 'position', 'address', 'type') // Seleziona i campi specifici
+        ->with([
+            'therapistProfile',
+            'parentPatientProfile',
+            'centerProfile',
+            'availabilities'
+        ])
         ->get();
+    return UserResource::collection($users);
+}
 
-        return UserResource::collection($users);
-    }
 
     public function getSavedUsers()
     {
@@ -91,48 +96,111 @@ class UserController extends Controller
         return new UserResource($user);
     }
 
-    public function update(Request $request, $id)
+    public function updateProfile(Request $request)
     {
-        $user = User::findOrFail($id);
+        $user = auth()->user();
 
-        // Autorizzazione (facoltativo, se necessario)
-        // $this->authorize('update', $user);
-
-        // Validazione dell'input
-        $validatedData = Validator::make($request->all(), [
+        // Validazione
+        $data = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'type' => 'required|in:therapist,parent_patient,center',
-            'is_premium' => 'boolean',
+            'surname' => 'required|string|max:255',
+            'image_url' => 'nullable|url',
             'position' => 'nullable|string|max:255',
-        ])->validate();
+            'address' => 'nullable|string|max:255',
+            'type' => 'required|in:therapist,parent_patient,center',
+            'is_premium' => 'nullable|boolean',
+            'therapies' => 'nullable|array', // JSON
+            'profession' => 'nullable|string|max:255', // therapist
+            'bio' => 'nullable|string|max:500',       // therapist
+            'hourly_rate' => 'nullable|numeric',      // therapist
+            'relationship' => 'nullable|string|max:255', // parent_patient
+            'center_name' => 'nullable|string|max:255',  // center
+            'service' => 'nullable|array',               // JSON
+            'description' => 'nullable|string|max:500',  // center
+        ]);
 
-        // Aggiornamento dei dati dell'utente
-        $user->update($validatedData);
+        // Aggiorna i dati generici dell'utente
+        $user->update([
+            'name' => $data['name'],
+            'surname' => $data['surname'],
+            'image_url' => $data['image_url'] ?? $user->image_url,
+            'position' => $data['position'] ?? $user->position,
+            'address' => $data['address'] ?? $user->address,
+            'type' => $data['type'],
+            'is_premium' => $data['is_premium'] ?? $user->is_premium,
+        ]);
 
-        // Aggiornamento del profilo specifico in base al tipo di utente
+        // Aggiornamento del profilo specifico
         switch ($user->type) {
             case 'therapist':
                 $user->therapistProfile()->updateOrCreate(
                     ['user_id' => $user->id],
-                    $request->only(['specialization', 'bio', 'profession'])
+                    $request->only(['therapies', 'profession', 'bio', 'hourly_rate'])
                 );
                 break;
             case 'parent_patient':
                 $user->parentPatientProfile()->updateOrCreate(
                     ['user_id' => $user->id],
-                    $request->only(['relationship', 'patient_name', 'patient_birthdate'])
+                    $request->only(['therapies', 'relationship'])
                 );
                 break;
             case 'center':
                 $user->centerProfile()->updateOrCreate(
                     ['user_id' => $user->id],
-                    $request->only(['center_name', 'service', 'description'])
+                    $request->only(['therapies', 'center_name', 'service', 'description'])
                 );
                 break;
         }
 
-        return new UserResource($user->load(['therapistProfile', 'parentPatientProfile', 'centerProfile']));
+        return response()->json([
+            'message' => 'Profilo aggiornato con successo!',
+            'user' => new \App\Http\Resources\UserResource($user->load(['therapistProfile', 'parentPatientProfile', 'centerProfile']))
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $data = $request->validate([
+            'type' => 'nullable|in:therapist,parent_patient,center',
+            'therapies' => 'nullable|array',
+            'profession' => 'nullable|string',
+            'service' => 'nullable|string',
+            'is_premium' => 'nullable|boolean',
+        ]);
+
+        $query = User::query();
+
+        if (isset($data['type'])) {
+            $query->where('type', $data['type']);
+        }
+
+        if (isset($data['therapies'])) {
+            $query->whereHas('therapistProfile', function ($q) use ($data) {
+                foreach ($data['therapies'] as $therapy) {
+                    $q->whereJsonContains('therapies', $therapy);
+                }
+            });
+        }
+
+        if (isset($data['profession'])) {
+            $query->whereHas('therapistProfile', function ($q) use ($data) {
+                $q->where('profession', 'like', '%' . $data['profession'] . '%');
+            });
+        }
+
+        if (isset($data['service'])) {
+            $query->whereHas('centerProfile', function ($q) use ($data) {
+                $q->whereJsonContains('service', $data['service']);
+            });
+        }
+
+        if (isset($data['is_premium'])) {
+            $query->where('is_premium', $data['is_premium']);
+        }
+
+        $users = $query->with(['therapistProfile', 'parentPatientProfile', 'centerProfile'])->get();
+
+        return UserResource::collection($users);
     }
 
     public function destroy($id)

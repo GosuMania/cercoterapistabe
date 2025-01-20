@@ -12,8 +12,7 @@ class CreateParentPatientProfilesTable extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('relationship')->nullable();
-            $table->string('patient_name')->nullable();
-            $table->date('patient_birthdate')->nullable();
+            $table->json('therapies')->nullable(); //  modificato da required_therapies
             $table->timestamps();
         });
     }

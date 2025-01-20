@@ -12,8 +12,10 @@ class CreateTherapistProfilesTable extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('profession');
-            $table->string('specialization');
+            $table->json('therapies')->nullable(); // modificato da specializations
+            // $table->json('availability');  rimosso availability
             $table->text('bio')->nullable();
+            $table->decimal('hourly_rate', 10, 2);
             $table->timestamps();
         });
     }
@@ -23,4 +25,5 @@ class CreateTherapistProfilesTable extends Migration
         Schema::dropIfExists('therapist_profiles');
     }
 }
+
 

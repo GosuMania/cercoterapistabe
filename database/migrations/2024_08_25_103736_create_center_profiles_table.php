@@ -12,7 +12,8 @@ class CreateCenterProfilesTable extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('center_name');
-            $table->string('service');
+            $table->json('therapies')->nullable(); // aggiunto
+            $table->json('service')->nullable(); // modificato in json
             $table->text('description')->nullable();
             $table->timestamps();
         });

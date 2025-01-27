@@ -25,6 +25,8 @@ class AuthController extends Controller
             'idToken' => 'nullable|string',
             'email' => 'nullable|email',
             'password' => 'nullable|string',
+            'name' => 'nullable|string',
+            'surname' => 'nullable|string',
         ]);
 
         if ($request->has('idToken')) {
@@ -37,12 +39,11 @@ class AuthController extends Controller
                 ->first();
 
             if (!$user) {
-                $displayName = $claims['name'] ?? null; // Il nome completo è in `name`
                 $user = User::create([
                     'firebase_token' => $firebaseUserId,
                     'email' => $email,
-                    'name' => $displayName ? explode(' ', $displayName)[0] : 'Nome',
-                    'surname' => $displayName ? explode(' ', $displayName)[1] ?? 'Cognome' : 'Cognome',
+                    'name' => $validatedData['name'],
+                    'surname' => $validatedData['surname'],
                     'password' => Hash::make(uniqid()), // Password casuale
                     'type' =>$request->type,
                     'is_premium' => $request->input('is_premium', false),
@@ -51,7 +52,7 @@ class AuthController extends Controller
                 $this->handleUserProfileCreation($user, $validatedData);
             }
 
-        } elseif ($request->has(['email', 'password'])) {
+        } else if ($request->has(['email', 'password'])) {
             $credentials = $request->only('email', 'password');
 
             if (Auth::attempt($credentials)) {
@@ -76,9 +77,29 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'user' => new UserResource($user),
-            'claims' => $verifiedIdToken->claims()->all()
         ]);
     }
+
+public function updateNameSurnameSocial(Request $request) {
+    $validatedData = $request->validate([
+        'name' => 'string|required', // Aggiunto 'required' per evitare valori vuoti
+        'surname' => 'string|required',
+        'firebaseUserId' => 'string|required'
+    ]);
+
+    $user = User::where('firebase_token', $validatedData['firebaseUserId'])->first();
+
+    if ($user) {
+        // Aggiorno i campi 'name' e 'surname'
+        $user->name = $validatedData['name'];
+        $user->surname = $validatedData['surname'];
+        $user->save(); // Salvo le modifiche nel database
+
+        return response()->json(['message' => 'Utente aggiornato con successo'], 200);
+    } else {
+        return response()->json(['error' => 'Non è possibile aggiornare l\'utente poiché non trovato'], 400);
+    }
+}
 
     protected function handleUserProfileCreation(User $user, array $data)
     {

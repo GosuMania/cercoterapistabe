@@ -46,12 +46,12 @@ Route::controller(MessageController::class)
         Route::delete('{id}', 'destroy');
     });
 
-    // Rotte protette per conversazioni e messaggi
-    Route::controller(ConversationController::class)
-        ->prefix('relationships')
-        ->middleware('auth:sanctum')
-        ->group(function () {
-            Route::get('/', 'index');
-            Route::post('/', 'store');
-            Route::put('{id}', 'update');
-        });
+// Rotte protette per conversazioni e messaggi
+Route::controller(TherapistCenterRelationshipController::class)
+    ->prefix('relationships')
+    ->middleware('auth:sanctum')
+    ->group(function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::put('{id}', 'update');
+    });

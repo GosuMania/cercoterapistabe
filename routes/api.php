@@ -8,8 +8,8 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\TherapistCenterRelationshipController;
 
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
-    Route::post('register', 'register');
-    Route::post('login', 'login');
+    // Route::post('register', 'register');
+    // Route::post('login', 'login');
     Route::post('login-or-register', 'loginOrRegister');
     Route::post('logout', 'logout')->middleware('auth:sanctum');
 });

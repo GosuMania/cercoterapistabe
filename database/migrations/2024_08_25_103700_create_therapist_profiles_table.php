@@ -13,6 +13,8 @@ class CreateTherapistProfilesTable extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('profession');
             $table->json('therapies')->nullable(); // modificato da specializations
+            $table->boolean('home_therapy')->default(false);
+            $table->number('range_home_therapy')->nullable();
             // $table->json('availability');  rimosso availability
             $table->text('bio')->nullable();
             $table->decimal('hourly_rate', 10, 2);

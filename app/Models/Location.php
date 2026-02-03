@@ -25,37 +25,33 @@ class Location extends Model
         'is_default'
     ];
 
-    /**
-     * Casting dei tipi di dato.
-     */
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
         'is_default' => 'boolean',
     ];
 
-    /**
-     * Relazione inversa: la location appartiene a un utente.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Boot del modello per gestire il salvataggio automatico del campo 'geom'
-     * se latitudine e longitudine sono presenti.
-     */
     protected static function boot()
     {
         parent::boot();
 
+        /**
+         * Prima di salvare, popoliamo il campo geom.
+         * MySQL richiede un valore per geom perché è NOT NULL.
+         */
         static::saving(function ($model) {
-            if ($model->latitude && $model->longitude) {
-                // Genera il punto geografico per PostGIS/MySQL Spatial
-                // Nota: In SQL l'ordine è POINT(Longitudine Latitudine)
-                $model->geom = DB::raw("ST_GeogFromText('POINT({$model->longitude} {$model->latitude})')");
-            }
+            $lat = $model->latitude ?? 0;
+            $lng = $model->longitude ?? 0;
+
+            // SRID 4326 è lo standard WGS84 (GPS)
+            // L'ordine POINT(lat lng) o POINT(lng lat) può variare in base alla versione di MySQL,
+            // ma lo standard geometrico X Y solitamente vede Longitudine (X) e Latitudine (Y).
+            $model->geom = DB::raw("ST_GeomFromText('POINT($lat $lng)', 4326)");
         });
     }
 

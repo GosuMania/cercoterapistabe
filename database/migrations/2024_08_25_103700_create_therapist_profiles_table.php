@@ -14,7 +14,7 @@ class CreateTherapistProfilesTable extends Migration
             $table->string('profession');
             $table->json('therapies')->nullable(); // modificato da specializations
             $table->boolean('home_therapy')->default(false);
-            $table->number('range_home_therapy')->nullable();
+            $table->integer('range_home_therapy')->nullable();
             // $table->json('availability');  rimosso availability
             $table->text('bio')->nullable();
             $table->decimal('hourly_rate', 10, 2);

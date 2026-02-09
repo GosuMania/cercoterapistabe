@@ -18,7 +18,7 @@ class SavedUserResource extends JsonResource
             'id' => $this->id,
             'userId' => $this->user_id,
             'savedUserId' => $this->saved_user_id,
-            'savedUser' => new UserResource($this->whenLoaded('user')),
+            'savedUser' => new UserResource($this->whenLoaded('savedUser')),
             'createdAt' => $this->created_at,
             'updatedAt' => $this->updated_at,
         ];

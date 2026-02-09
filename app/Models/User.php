@@ -15,13 +15,13 @@ class User extends Authenticatable
         'name',
         'surname',
         'email',
+        'phone',
         'image_url',
         'password',
         'firebase_token',
-        'position',
-        'address',
         'type',
         'is_premium',
+        'onboarding_completed',
         'email_verified_at',
     ];
 
@@ -33,6 +33,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_premium' => 'boolean',
+        'onboarding_completed' => 'boolean',
     ];
 
     public function therapistProfile()
@@ -68,5 +69,20 @@ class User extends Authenticatable
     public function locations()
     {
         return $this->hasMany(Location::class);
+    }
+
+    public function reviewsGiven()
+    {
+        return $this->hasMany(Review::class, 'reviewer_id');
+    }
+
+    public function interactions()
+    {
+        return $this->hasMany(UserInteraction::class, 'viewer_id');
+    }
+
+    public function interactionsReceived()
+    {
+        return $this->hasMany(UserInteraction::class, 'viewed_id');
     }
 }

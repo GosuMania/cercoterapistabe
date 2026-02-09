@@ -20,6 +20,12 @@ class MessageResource extends JsonResource
             'senderId' => $this->sender_id,
             'messageContent' => $this->message_content,
             'sender' => new UserResource($this->whenLoaded('sender')),
+            'attachments' => MessageAttachmentResource::collection($this->whenLoaded('attachments')),
+            'sentAt' => $this->sent_at,
+            'deliveredAt' => $this->delivered_at,
+            'readAt' => $this->read_at,
+            'createdAt' => $this->created_at,
+            'updatedAt' => $this->updated_at,
         ];
     }
 }

@@ -21,13 +21,14 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'imageUrl' => $this->image_url,
             'firebaseToken' => $this->firebase_token,
-            'position' => $this->position,
-            'address' => $this->address,
             'type' => $this->type,
             'isPremium' => $this->is_premium,
+            'onboardingCompleted' => $this->onboarding_completed,
             'emailVerifiedAt' => $this->email_verified_at,
             'profile' => $this->getProfile(),
-            'availabilities' => AvailabilityResource::collection($this->whenLoaded('availabilities')), // Aggiungi le disponibilità
+            'availabilities' => AvailabilityResource::collection($this->whenLoaded('availabilities')),
+            'locations' => LocationResource::collection($this->whenLoaded('locations')),
+            'distance' => $this->when(isset($this->distance), round($this->distance, 2)), // Distanza in km per risultati ricerca
         ];
     }
 

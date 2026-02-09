@@ -6,6 +6,8 @@ use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource; // Import necessario
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\UserInteraction;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ConversationController extends Controller
@@ -54,8 +56,24 @@ class ConversationController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
-        $authUserId = auth()->id();
+        $authUser = auth()->user();
+        $authUserId = $authUser->id;
         $otherUserId = $validatedData['user_id'];
+        $otherUser = User::findOrFail($otherUserId);
+
+        // Filtro anti-spam: i Centri possono contattare un Genitore solo se il Genitore ha interagito prima
+        if ($authUser->type === 'center' && $otherUser->type === 'parent_patient') {
+            $hasInteraction = UserInteraction::where('viewer_id', $otherUserId)
+                ->where('viewed_id', $authUserId)
+                ->whereIn('interaction_type', ['profile_view', 'info_request', 'search_result'])
+                ->exists();
+
+            if (!$hasInteraction) {
+                return response()->json([
+                    'error' => 'I centri possono contattare un genitore solo dopo che il genitore ha visualizzato il profilo o richiesto informazioni'
+                ], 403);
+            }
+        }
 
         $conversation = Conversation::whereHas('users', function ($query) use ($authUserId) {
             $query->where('user_id', $authUserId);
@@ -78,9 +96,12 @@ class ConversationController extends Controller
 
     public function update(Request $request, $conversationId)
     {
-        $conversation = Conversation::findOrFail($conversationId);
-
-        $this->authorize('update', $conversation);
+        $userId = auth()->id();
+        $conversation = Conversation::where('id', $conversationId)
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->firstOrFail();
 
         $validatedData = $request->validate([
             'conversation_name' => 'required|string|max:255',
@@ -93,9 +114,12 @@ class ConversationController extends Controller
 
     public function destroy($conversationId)
     {
-        $conversation = Conversation::findOrFail($conversationId);
-
-        $this->authorize('delete', $conversation);
+        $userId = auth()->id();
+        $conversation = Conversation::where('id', $conversationId)
+            ->whereHas('users', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->firstOrFail();
 
         $conversation->delete();
 

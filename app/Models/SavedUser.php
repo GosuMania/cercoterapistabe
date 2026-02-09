@@ -15,7 +15,15 @@ class SavedUser extends Model
     ];
 
     /**
-     * Get the user that owns the therapist profile.
+     * Get the user that saved this user.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the saved user.
      */
     public function savedUser()
     {

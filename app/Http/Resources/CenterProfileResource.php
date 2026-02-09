@@ -10,11 +10,15 @@ class CenterProfileResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'center_name' => $this->center_name,
+            'centerName' => $this->center_name,
+            'partitaIva' => $this->partita_iva,
             'therapies' => $this->therapies,
             'service' => $this->service,
             'description' => $this->description,
-            'therapists' => TherapistProfileResource::collection($this->whenLoaded('therapists')), // Relazione con i terapeuti
+            'logoUrl' => $this->logo_url,
+            'averageRating' => $this->when(isset($this->average_rating), $this->average_rating),
+            'therapists' => TherapistProfileResource::collection($this->whenLoaded('therapists')),
+            'announcements' => AnnouncementResource::collection($this->whenLoaded('announcements')),
         ];
     }
 }
